@@ -50,10 +50,13 @@ def upgrade():
         sa.Column('auction_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('auctions.id', ondelete='CASCADE'), nullable=False),
         sa.Column('bidder_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('users.id'), nullable=False),
         sa.Column('amount_paise', sa.BigInteger(), nullable=False),
+        sa.Column('auction_version', sa.Integer(), nullable=False),
         sa.Column('idempotency_key', sa.String(90), nullable=False),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.UniqueConstraint('auction_id', 'bidder_id', 'idempotency_key', name='uq_bid_idempotency'),
-        sa.CheckConstraint('amount_paise > 0'))
+        sa.UniqueConstraint('auction_id', 'auction_version', name='uq_bid_auction_version'),
+        sa.CheckConstraint('amount_paise > 0'),
+        sa.CheckConstraint('auction_version > 0'))
     op.create_index('ix_bids_auction_time', 'bids', ['auction_id', 'created_at'])
     op.create_table('outbox_events',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),

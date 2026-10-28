@@ -13,7 +13,9 @@ router = APIRouter(prefix='/auctions', tags=['bidding'])
 @router.post('/{auction_id}/bids', response_model=BidOut, status_code=201)
 async def submit_bid(auction_id: uuid.UUID, data: BidIn, request: Request,
                      user: User = Depends(require_user)):
-    await throttle(request, 'bid', limit=60)
+    if user.role != 'buyer':
+        raise HTTPException(403, 'Only buyers may place bids')
+    await throttle(request, 'bid', limit=60, identity=str(user.id))
     # Lock the auction row before checking price/time/idempotency. The DB lock,
     # not the event bus or frontend, decides which concurrent request wins.
     try:
@@ -37,13 +39,14 @@ async def submit_bid(auction_id: uuid.UUID, data: BidIn, request: Request,
                          now=now, amount=data.amount_paise, minimum=minimum,
                          highest_bidder_id=str(auction.highest_bidder_id) if auction.highest_bidder_id else None,
                          bidder_id=str(user.id))
+            auction.version += 1
             bid = Bid(auction_id=auction.id, bidder_id=user.id,
-                      amount_paise=data.amount_paise, idempotency_key=data.idempotency_key)
+                      amount_paise=data.amount_paise, auction_version=auction.version,
+                      idempotency_key=data.idempotency_key, created_at=now)
             db.add(bid)
             auction.current_price_paise = data.amount_paise
             auction.highest_bidder_id = user.id
             auction.bid_count += 1
-            auction.version += 1
             enqueue(db, auction, 'bid_accepted')
             await db.flush()
             result = BidOut(id=bid.id, auction_id=bid.auction_id, amount_paise=bid.amount_paise,

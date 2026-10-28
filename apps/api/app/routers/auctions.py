@@ -32,6 +32,6 @@ async def bid_history(auction_id: uuid.UUID, db: AsyncSession = Depends(get_db))
     if auction is None or auction.status == 'draft':
         raise HTTPException(404, 'Auction not found')
     bids = (await db.scalars(select(Bid).where(Bid.auction_id == auction_id)
-                             .order_by(desc(Bid.created_at), desc(Bid.id)).limit(20))).all()
+                             .order_by(desc(Bid.auction_version)).limit(20))).all()
     return [BidOut(id=b.id, auction_id=b.auction_id, amount_paise=b.amount_paise,
                    created_at=b.created_at, bidder_label=f'Bidder #{str(b.bidder_id)[:6]}') for b in bids]

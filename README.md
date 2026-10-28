@@ -24,3 +24,10 @@ docker compose exec api python -m app.seed
 ```
 
 Admin login is controlled by `ADMIN_EMAIL` and `ADMIN_PASSWORD` set in `.env`. `seed` adds sample auctions; publish them from the admin console. A regular buyer registers via the app. Do not reuse the demo credentials online.
+
+## Verification status
+
+- The Python code was syntax-checked, and 10 backend pure-rule tests passed in the creation environment.
+- The integration test requires a disposable PostgreSQL database and Redis, and is wired into CI; it was not executed here.
+- TypeScript/TSX files passed a syntax transpilation check, but **a complete Next.js build could not be run here**, because this environment could not fetch npm packages.
+- No public project deployment or reviewer credentials have been created. Follow `docs/SETUP_DEPLOY.md` to obtain the hosted URL.

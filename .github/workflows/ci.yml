@@ -1,0 +1,50 @@
+name: Validate MotoBid
+on:
+  push:
+  pull_request:
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_DB: auction_test, POSTGRES_USER: auction, POSTGRES_PASSWORD: testpassword }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U auction -d auction_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql+asyncpg://auction:testpassword@localhost:5432/auction_test
+      TEST_DATABASE_URL: postgresql+asyncpg://auction:testpassword@localhost:5432/auction_test
+      REDIS_URL: redis://localhost:6379/0
+      APP_SECRET: test_secret_only_never_use_this_in_a_real_deployment_2026
+      WEB_ORIGIN: http://localhost:3000
+      METRICS_TOKEN: test_metrics_token
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install -r requirements.txt
+      - run: alembic upgrade head
+      - run: pytest -q
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: npm install --no-audit
+      - run: npm run lint
+      - run: npm run build

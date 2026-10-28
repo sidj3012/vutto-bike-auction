@@ -63,11 +63,14 @@ class Bid(Base):
     auction_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey('auctions.id', ondelete='CASCADE'), nullable=False)
     bidder_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
     amount_paise: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    auction_version: Mapped[int] = mapped_column(Integer, nullable=False)
     idempotency_key: Mapped[str] = mapped_column(String(90), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     __table_args__ = (
         UniqueConstraint('auction_id', 'bidder_id', 'idempotency_key', name='uq_bid_idempotency'),
         CheckConstraint('amount_paise > 0'),
+        CheckConstraint('auction_version > 0'),
+        UniqueConstraint('auction_id', 'auction_version', name='uq_bid_auction_version'),
         Index('ix_bids_auction_time', 'auction_id', 'created_at'),
     )
 
