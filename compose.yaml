@@ -34,11 +34,7 @@ services:
       db: {condition: service_healthy}
       redis: {condition: service_healthy}
   web:
-    build:
-      context: ./apps/web
-      args:
-        API_BACKEND_URL: ${API_BACKEND_URL:-http://api:8000}
-        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://localhost:8000}
+    build: ./apps/web
     env_file: .env
     ports: ["3000:3000"]
     depends_on: [api]
