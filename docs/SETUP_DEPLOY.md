@@ -1,4 +1,4 @@
-# MotoBid — local setup, testing and deployment (start to finish)
+# Vutto — local setup, testing and deployment (start to finish)
 
 ## 0. Prerequisites
 
@@ -126,7 +126,7 @@ These steps require your Railway account. They do **not** constitute a live depl
 # After extracting source ZIP:
 git init
 git add .
-git commit -m "MotoBid implementation"
+git commit -m "Vutto implementation"
 git branch -M main
 git remote add origin https://github.com/YOUR_ACCOUNT/YOUR_REPOSITORY.git
 git push -u origin main

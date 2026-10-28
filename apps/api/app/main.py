@@ -13,11 +13,11 @@ from app.db import engine
 from app.routers import auth, auctions, admin, bidding, live
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s %(message)s')
-log = logging.getLogger('motobid')
+log = logging.getLogger('vutto')
 if settings.sentry_dsn:
     sentry_sdk.init(dsn=settings.sentry_dsn, traces_sample_rate=0.1)
-REQUESTS = Counter('motobid_http_requests_total', 'HTTP requests', ['method', 'route', 'status'])
-LATENCY = Histogram('motobid_http_request_seconds', 'HTTP request latency', ['method', 'route'])
+REQUESTS = Counter('vutto_http_requests_total', 'HTTP requests', ['method', 'route', 'status'])
+LATENCY = Histogram('vutto_http_request_seconds', 'HTTP request latency', ['method', 'route'])
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
     await app.state.redis.aclose()
     await engine.dispose()
 
-app = FastAPI(title='MotoBid Auction API', version='1.0.0', lifespan=lifespan)
+app = FastAPI(title='Vutto Auction API', version='1.0.0', lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=[settings.web_origin], allow_credentials=True,
                    allow_methods=['GET', 'POST'], allow_headers=['Content-Type', 'X-Request-ID'])
 

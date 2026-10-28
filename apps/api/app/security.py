@@ -12,7 +12,7 @@ from app.models import User
 from sqlalchemy.ext.asyncio import AsyncSession
 
 password_hash = PasswordHash.recommended()
-COOKIE_NAME = 'motobid_session'
+COOKIE_NAME = 'vutto_session'
 SESSION_AGE_SECONDS = 60 * 60 * 24 * 7
 
 def hash_password(password: str) -> str:

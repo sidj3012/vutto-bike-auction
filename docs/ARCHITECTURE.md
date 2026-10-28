@@ -1,4 +1,4 @@
-# MotoBid architecture and engineering decisions
+# Vutto architecture and engineering decisions
 
 ## 1. Goals and non-goals
 
@@ -123,7 +123,7 @@ OpenAPI interactive schema: `/docs` on the API server. Production docs are infor
 - Restricted browser CORS origin and exact `Origin` validation for every write, including unauthenticated auth endpoints, to prevent CSRF with cookies. No state mutation over GET or WebSocket.
 - Server-side authorization for admin actions. Client-side admin routing is only a UX convenience.
 - Registration and login are rate-limited by a hash of email address; bids are rate-limited by buyer ID using Redis. Since a reverse proxy multiplexes users, also apply independent per-IP/ASN limits at a trusted edge gateway and CAPTCHA or bot defense before public launch.
-- Validation bounds for prices, year, mileage, user input, title, and description. URL inputs are accepted as `https://` only; **image fetching is not implemented** (no SSRF fetch).
+- Validation bounds for prices, year, distance travelled, user input, title, and description. URL inputs are accepted as `https://` only; **image fetching is not implemented** (no SSRF fetch).
 - Parameterized SQLAlchemy SQL instead of string-formatted SQL; DB credentials only in environment variables.
 - Security response headers and private service network; production HTTPS and WSS required.
 - Do not log authorization cookies, JWTs, plaintext passwords, or raw bid request bodies. `X-Request-ID` correlates HTTP requests.

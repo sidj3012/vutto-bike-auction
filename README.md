@@ -1,16 +1,20 @@
-# MotoBid — production-minded motorcycle auctions
+# Vutto — production-minded motorcycle auctions
 
 Full-stack auction demo. See [Setup and Deployment](docs/SETUP_DEPLOY.md) and [Architecture & Trade-offs](docs/ARCHITECTURE.md).
 
 > This project is a deployment-ready *reference implementation*, not a claim that it has undergone a security audit, load test, or production certification. No live public URL is included; deployment requires your own hosting credentials.
 
-## Five phases
+## Seven commits
 
-1. Foundation: infra, schema, migrations, typed contracts.
-2. Identity, auction catalogue, admin endpoints.
-3. Transactional bidding, lifecycle worker, durable outbox, WebSockets.
-4. Responsive buyer and admin interfaces.
-5. Automated tests, CI, hardening, operations and deployment playbook.
+1. Infrastructure, schema and migrations.
+2. Authentication, catalog and admin APIs.
+3. Transactional bidding, worker and live events.
+4. Buyer-facing pages and auction room.
+5. Admin dashboard and listing management.
+6. Testing, CI, security and deployment documentation.
+7. UI fixes: account-aware bidding, countdowns, navigation, error messages and Vutto branding.
+
+The API and database retain the `mileage_km` field for backward compatibility; the UI labels it **Km driven**.
 
 ## Quickstart
 

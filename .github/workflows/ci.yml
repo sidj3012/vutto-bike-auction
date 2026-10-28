@@ -1,4 +1,4 @@
-name: Validate MotoBid
+name: Validate Vutto
 on:
   push:
   pull_request:

@@ -20,7 +20,9 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
     let message = `${response.status}: Request failed`;
     try {
       const data = await response.json();
-      message = typeof data.detail === 'string' ? data.detail : message;
+      if (typeof data.detail === 'string') message = data.detail;
+      else if (Array.isArray(data.detail)) message = data.detail.map((issue: { msg?: string; loc?: string[] }) => issue.msg ?? 'Invalid request').join('; ');
+      else if (typeof data.message === 'string') message = data.message;
     } catch { /* fallback */ }
     throw new Error(message);
   }

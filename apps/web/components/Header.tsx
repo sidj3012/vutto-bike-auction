@@ -14,8 +14,8 @@ export function Header() {
   };
   return <header className="site-header">
     <div className="container header-inside">
-      <Link href="/" className="brand"><span className="logo-mark">M.</span> MotoBid<span className="brand-point">.</span></Link>
-      <nav aria-label="Main navigation"><Link href="/">Explore auctions</Link>{user?.role === 'admin' && <Link href="/admin">Admin studio</Link>}</nav>
+      <Link href="/" className="brand"><span className="logo-mark">V.</span> Vutto<span className="brand-point">.</span></Link>
+      <nav aria-label="Main navigation"><Link href="/#auctions">Explore auctions</Link>{user?.role === 'admin' && <Link href="/admin">Admin studio</Link>}</nav>
       <div className="header-account">
         {user ? <><span className="hello"><ShieldCheck size={15}/>{user.display_name}</span><button className="icon-button" onClick={logout} title="Sign out" aria-label="Sign out"><LogOut size={18}/></button></>
           : <Link className="button small dark" href="/login">Sign in <ArrowRight size={15}/></Link>}

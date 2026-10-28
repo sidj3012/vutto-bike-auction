@@ -11,7 +11,7 @@ BIKES = [
     ('Royal Enfield Classic 350', 'Royal Enfield', 'Classic 350', 2022, 13200, 17500000, 250000,
      'Beautifully maintained single-owner motorcycle. Recently serviced with clean documentation.'),
     ('KTM Duke 390', 'KTM', 'Duke 390', 2023, 8400, 23000000, 500000,
-     'Powerful street machine with low mileage, inspected brakes and excellent tyres.'),
+     'Powerful street machine with low kilometres driven, inspected brakes and excellent tyres.'),
     ('Honda CB350 RS', 'Honda', 'CB350 RS', 2021, 18100, 15500000, 250000,
      'Retro styling, reliable engine, complete service history and original spare key.'),
 ]

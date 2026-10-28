@@ -16,7 +16,7 @@ from app.events import enqueue
 from app.models import Auction, OutboxEvent
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s %(message)s')
-log = logging.getLogger('motobid.worker')
+log = logging.getLogger('vutto.worker')
 
 async def transition_auctions() -> int:
     count = 0
