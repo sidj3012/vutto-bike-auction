@@ -10,7 +10,7 @@ from prometheus_client import Counter, Histogram, CONTENT_TYPE_LATEST, generate_
 import sentry_sdk
 from app.config import settings
 from app.db import engine
-from app.routers import auth, auctions, admin
+from app.routers import auth, auctions, admin, bidding, live
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s %(message)s')
 log = logging.getLogger('motobid')
@@ -74,3 +74,6 @@ async def metrics(request: Request):
 app.include_router(auth.router, prefix='/api/v1')
 app.include_router(auctions.router, prefix='/api/v1')
 app.include_router(admin.router, prefix='/api/v1')
+
+app.include_router(bidding.router, prefix='/api/v1')
+app.include_router(live.router)
