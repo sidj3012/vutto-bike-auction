@@ -1,4 +1,4 @@
-# Vutto — local setup, testing and deployment (start to finish)
+# Local setup, testing and deployment
 
 ## 0. Prerequisites
 
@@ -47,9 +47,7 @@ curl -fsS http://localhost:8000/readyz
 docker compose logs -f api worker web
 ```
 
-Open <http://localhost:3000>. Seeded admin credentials are sourced from the **local** `.env` (`ADMIN_EMAIL`, `ADMIN_PASSWORD`). Sign in, go to **Admin studio**, and publish at least one draft auction. Sign out, register another email as a buyer, and bid on a live auction. You can use an incognito browser profile for the second user. The example bikes' start dates are generated relative to **when the seed command runs**, not hardcoded to a calendar year.
-
-> Demo admin credentials in `.env.example` are intentionally obvious and **must not be used online**. Do not commit `.env`; `.gitignore` excludes it. The seed command does not rotate an existing admin's password.
+Open <http://localhost:3000>. Seeded admin credentials are sourced from the **local** `.env` (`ADMIN_EMAIL`, `ADMIN_PASSWORD`). Sign in, go to **Admin studio**, and publish at least one draft auction. Sign out, register another email as a buyer, and bid on a live auction. 
 
 For container cleanup without losing DB: `docker compose down`. For total reset (DELETES your local data): `docker compose down -v`.
 
@@ -70,7 +68,7 @@ Quick Python unit tests (no PostgreSQL needed):
 docker compose exec api pytest -q tests/test_logic.py
 ```
 
-Integration tests require an **isolated database explicitly named `auction_test`**; they reset its tables. Do NOT target the standard `auction` DB, any production DB, or a shared database.
+Integration tests require an **isolated database explicitly named** `auction_test`; they reset its tables. Do NOT target the standard `auction` DB, any production DB, or a shared database.
 
 ```bash
 # Create a dedicated test DB in Docker. Only run once (ignore 'already exists').
@@ -118,23 +116,7 @@ When running the seed locally, supply `ADMIN_EMAIL` and `ADMIN_PASSWORD`, then r
 
 ## 5. Deploy to Railway (GitHub-connected monorepo)
 
-These steps require your Railway account. They do **not** constitute a live deployment from this repository export. Railway supports Dockerfiles, multiple monorepo services, private networking, and public domains; some dashboard control names may change.
-
-**Step A — Push source to GitHub:**
-
-```bash
-# After extracting source ZIP:
-git init
-git add .
-git commit -m "Vutto implementation"
-git branch -M main
-git remote add origin https://github.com/YOUR_ACCOUNT/YOUR_REPOSITORY.git
-git push -u origin main
-```
-
-**To preserve the original 5-commit history instead**, use the separate `bike-auction-history.bundle` file: `git clone bike-auction-history.bundle bike-auction-platform && cd bike-auction-platform`, then add your GitHub remote and push the checked-out branch. Use either path, not both.
-
-**Step B — Create Railway project and add services:**
+ **Create Railway project and add services:**
 
 1. Create an empty Railway project. Add PostgreSQL and Redis managed services (name them `Postgres`, `Redis`).
 2. Add **API** service from GitHub, root directory `/apps/api`, using its Dockerfile; set service's listen/public port to **8000** (`PORT=8000`). Generate a public domain. Health check path `/readyz` after applying migrations.
@@ -160,75 +142,11 @@ git push -u origin main
 | Web | `API_BACKEND_URL` | Private API address, e.g. `http://api.railway.internal:8000` |
 | Web | `PUBLIC_WS_URL` | `wss://YOUR_API_PUBLIC_DOMAIN` (no trailing slash) |
 
-**Crucial:** `WEB_ORIGIN` is the public **web** address, not the API address. Keep all application secrets in Railway variables, not in Git. The web service's `API_BACKEND_URL` remains private; `PUBLIC_WS_URL` is deliberately public. The browser connects to `/ws/auctions/{uuid}` on the public API domain.
 
-**Step D — Apply migrations once BEFORE serving requests:**
+
+**Apply migrations once BEFORE serving requests:**
 
 - Railway provides remote service execution/one-off jobs depending on your plan and interface. Use a **one-off task** using the API image with environment variables set, command `alembic upgrade head`, working directory `/srv`.
 - Alternatively, securely run `alembic upgrade head` from a machine with connectivity to the managed PostgreSQL endpoint by setting `DATABASE_URL` to the provider's public DB URL; restrict exposure/access as appropriate.
 - Only after successful migration, start API and worker replicas. Never run migrations automatically in every horizontally scaled API container; backup DB before destructive migrations.
 - Once API `/readyz` is healthy, deploy/redeploy the web service.
-
-**Step E — Prepare secure demo credentials and content:**
-
-- Temporarily set secret variables `ADMIN_EMAIL=your-demo-admin@example.com` and `ADMIN_PASSWORD=<a unique strong 16+ char password>` for a one-off job using the **API image**, then run `python -m app.seed`. Remove the password variable from the long-lived service environment after seeding if you do not need it later.
-- Log in at `https://YOUR_WEB_DOMAIN/login` with your seeded admin, open `/admin`, and publish demo auction drafts. Create a separate buyer via `/register`. Never publish the admin credentials publicly unless they are a dedicated throwaway demo account without access to anything sensitive.
-- If reviewers need credentials, provide a throwaway buyer login and an isolated demo admin login in your submission notes. Use no personal passwords.
-
-**Step F — Verify externally:**
-
-```bash
-curl -fsS https://YOUR_API_PUBLIC_DOMAIN/healthz
-curl -fsS https://YOUR_API_PUBLIC_DOMAIN/readyz
-curl -I https://YOUR_WEB_DOMAIN/
-# The API OpenAPI schema is available at https://YOUR_API_PUBLIC_DOMAIN/openapi.json
-```
-
-Then test login cookie persistence, two concurrent buyers, live websocket events, auction expiry, and restart recovery in the deployed environment. Check browser developer tools for the WS handshake (101 Switching Protocols), websocket `Origin`, and no mixed HTTP content. Test on mobile width.
-
-**Railway troubleshooting:** If the browser sees `502 Backend unavailable`, check `API_BACKEND_URL` and private DNS/port. If bids work but real-time is offline, check `PUBLIC_WS_URL`, API's public domain and allowed `WEB_ORIGIN`. If all unsafe requests return 403, verify exact `WEB_ORIGIN` and reverse-proxy forwarding of the browser `Origin` header. If auth returns 401 after login, confirm `Set-Cookie` on the web origin, HTTPS, and Redis health. If auctions don't transition, inspect the **worker** logs and its database permissions.
-
-## 6. Observability checks and operational playbook
-
-```bash
-curl -H 'X-Metrics-Token: local_metrics_secret' http://localhost:8000/metrics
-# Note: this example token is from LOCAL .env.example, never use online.
-docker compose logs -f worker api
-```
-
-A production metrics collector should scrape the API over a private network with a protected header. Configure alerts for high bid response latency, worker crashes, older unpublished outbox events, and auctions remaining `active` beyond their end time. Never expose `/metrics` or PostgreSQL publicly without network restrictions and authentication. See `docs/ARCHITECTURE.md` for sample SQL and monitoring thresholds.
-
-**If API fails:** readiness fails, restart and inspect logs; committed bids remain in PostgreSQL. **If Redis fails:** read-only browsing may continue, session auth and notifications fail closed; repair Redis and monitor backlog in `outbox_events`. **If worker fails:** bidding still rejects expired auctions, but status changes and notifications lag until recovery. **If DB fails:** stop attempting client-side retries without idempotency keys; after recovery replay the *same* idempotency key for an uncertain bid response. **If persistent data is lost:** restore the managed PostgreSQL backup and validate consistency before reopening auctions.
-
-## 7. Five logical commits and what to review
-
-| Commit | Phase | Technical focus | Review checkpoints |
-|---|---|---|---|
-| 1 | Foundation | Docker Compose, schema, migrations, Python contracts | DB constraints, DB types, storage |
-| 2 | API core | Registration/login, catalogue, role-restricted admin APIs | Cookies, authorization, status transitions |
-| 3 | Auction engine | Locked bid writes, idempotency, outbox, worker, WebSockets | Simultaneous bids, clock boundary, retry |
-| 4 | Product UX | Landing catalogue, auction room, admin studio, responsive styling | Loading/errors, accessibility, mobile |
-| 5 | Verification/ops | Unit and integration tests, CI, hardening, deployment documentation | Tests, secrets, failure/recovery |
-
-To see actual commits in the supplied Git bundle: `git log --oneline --reverse`. To review changes: `git show <commit>`; to run each stage: `git checkout <commit>` (earlier stages are **review checkpoints**, not individually deployable releases).
-
-## 8. Hand-in checklist
-
-- [ ] Real GitHub repository with five meaningful commits (use bundle if preserving history)
-- [ ] Public web URL opening without errors
-- [ ] Buyer demo login and **separate** protected admin demo login supplied privately
-- [ ] Source code and `README.md`
-- [ ] Architecture document and tradeoffs
-- [ ] Local setup and Railway deployment guide
-- [ ] CI green: Python tests, real PostgreSQL contention, TypeScript/build
-- [ ] WebSocket connection and worker verified on hosting
-- [ ] Replaced all sample secrets; `.env` absent from Git
-- [ ] Screen recording optional, shows concurrent bids and timer-driven closure
-
-## 9. References
-
-- [Next.js route handlers](https://nextjs.org/docs/app/getting-started/route-handlers)
-- [FastAPI WebSockets](https://fastapi.tiangolo.com/advanced/websockets/)
-- [PostgreSQL locking](https://www.postgresql.org/docs/current/explicit-locking.html)
-- [Railway monorepo deployments](https://docs.railway.com/deployments/monorepo)
-- [Railway start commands](https://docs.railway.com/deployments/start-command)

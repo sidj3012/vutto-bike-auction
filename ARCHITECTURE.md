@@ -1,4 +1,4 @@
-# Vutto architecture and engineering decisions
+# Architecture and engineering decisions
 
 ## 1. Goals and non-goals
 
@@ -7,8 +7,6 @@
 **Non-goals for this internship scope:** payment escrow, delivery, KYC/title-transfer integration, fraud scoring, notification emails/SMS, automatic extensions (anti-sniping), bidding deposits, multi-currency support, and a legal marketplace launch. These would be mandatory product decisions before handling real money.
 
 **Guarantees:** (1) committed bid history is append-only through application APIs; (2) for each auction, bid decisions are serialized by a PostgreSQL row lock; (3) expired auctions reject bids based on PostgreSQL server time; (4) identical (buyer, auction, idempotency key) retries return the prior bid; (5) closing selects the latest highest accepted bidder; (6) events persist through an outbox if Redis is unavailable. Network updates are *at-least-once* and clients periodically reconcile.
-
-**Important distinction:** PostgreSQL's `SELECT FOR UPDATE` provides serialized critical sections for an auction row under READ COMMITTED. The system does **not** configure PostgreSQL's global SERIALIZABLE transaction isolation; it does not need to for this narrow invariant.
 
 ## 2. System diagram
 
@@ -160,7 +158,3 @@ No measured TPS or p99 latency claims are provided. Before public launch, load-t
 | Basic bike SVG artwork | Beautiful responsive UI with no remote image dependency | Not representative of actual motorcycles |
 | No payments / notifications | Concentrates on auction correctness and UI | Marketplace not ready for actual transactions |
 | Single worker deployment | Predictable event order for assignment | Production scale may need ordered partitioning |
-
-## 12. Known limitations / disclosure
-
-This code has not been deployed from this environment, and frontend dependencies could not be installed here (external package registry DNS unavailable). Testable backend unit tests and actual Git commit history are supplied; CI is configured for PostgreSQL concurrency tests and the frontend build on your GitHub. Execute the verification checklist in the setup guide and resolve any build/API issues before sharing a hosted demo. No invented production URL or live credentials are provided.
