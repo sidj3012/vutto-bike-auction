@@ -75,10 +75,26 @@ async def test_concurrent_bid_locking_idempotency_and_expiry():
                 cookies={COOKIE_NAME: first_token})
             assert csrf.status_code == 403
             # Publish outbox once; emitted event is recoverable after restart.
+            channel = f'auction:{aid}'
+
             async with redis.pubsub() as pubsub:
-                await pubsub.subscribe(f'auction:{aid}')
+                await pubsub.subscribe(channel)
+
+                # Wait until Redis confirms that the subscription is active.
+                confirmation = await pubsub.get_message(
+                    ignore_subscribe_messages=False,
+                    timeout=2,
+                )
+                assert confirmation is not None
+                assert confirmation["type"] == "subscribe"
+
+                # Publish only after the subscription is confirmed.
                 assert await publish_outbox(redis) == 1
-                msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=2)
+
+                msg = await pubsub.get_message(
+                    ignore_subscribe_messages=True,
+                    timeout=2,
+                )
                 assert msg and 'auction_changed' in msg['data']
             # Expire auction, then assert that new bids are rejected.
             async with SessionLocal.begin() as db:
